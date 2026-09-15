@@ -156,13 +156,15 @@ All screens are phone-first; primary controls sit in the lower two-thirds of the
 
 ### Home (`/`)
 
+> Routing note: the app is built as a Next.js static export so every route is a precachable HTML file. Ids travel as query params (`?id=`) rather than dynamic path segments.
+
 List of kid profiles (name, jersey, team). Tap → that player's page (New game / game history). Gear → Settings. Empty state on first run leads straight into "Add your player".
 
-### Game setup (`/games/new`)
+### Game setup (`/game/new?playerId=`)
 
 Opponent, date (defaults now), period count/length (defaults from team), visible event buttons (defaults from the last game for that player). "Start game" creates the game with `status: 'live'` and opens the live screen.
 
-### Live game (`/games/[id]/live`)
+### Live game (`/game/live?id=`)
 
 ```
 ┌────────────────────────────────┐
@@ -194,7 +196,7 @@ Rules:
 - Screen stays awake via the Wake Lock API while the game is live.
 - Header "End game" → single confirm → `status: 'final'` → postgame card.
 
-### Postgame card (`/games/[id]/card`)
+### Postgame card (`/game/card?id=`)
 
 Kid name and jersey, opponent, date, ice time (clock), shifts / avg / longest, per-period bar, stat line, tags, moments with notes, editable parent note. **Share** renders the card to a PNG (canvas) and uses the Web Share API, falling back to download. **Done** returns to the player's history. Full timeline is a second tab on this screen.
 
@@ -204,7 +206,7 @@ Players and teams (including roster), default visible events, default period set
 
 ## 7. Architecture
 
-Next.js App Router, TypeScript strict, Tailwind. All routes are client-rendered; no server code in v1.
+Next.js App Router with `output: 'export'`, TypeScript strict, Tailwind. All routes are client-rendered static HTML; no server code in v1.
 
 ```
 src/
@@ -237,7 +239,7 @@ Button → `repo.appendEvent(gameId, event)` (Dexie transaction assigns `seq`) �
 
 ### Offline / PWA
 
-Serwist service worker precaches the app shell. `manifest.json` with `display: standalone`, icons, theme colour. New service workers install in the background and activate on next launch — never mid-game.
+A small hand-written service worker (`public/sw.js`) precaches every exported route plus the `/_next/static` assets they reference, and serves cache-first. `manifest.json` with `display: standalone`, icons, theme colour. New service workers install in the background and activate on next launch — never mid-game.
 
 ### Backup
 
@@ -251,7 +253,7 @@ Settings → Export JSON (all tables) via Web Share API or download. Import merg
 
 ### Deployment
 
-Vercel, default Next.js settings, no environment variables in v1.
+Vercel, default Next.js settings (static export), no environment variables in v1.
 
 ## 8. Testing
 
