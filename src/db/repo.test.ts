@@ -35,6 +35,17 @@ describe("cascades", () => {
     expect(await db.games.count()).toBe(0);
     expect(await db.events.count()).toBe(0);
   });
+
+  it("deleting a team removes its players, games and events", async () => {
+    const { team, player } = await seedPlayer();
+    const game = await repo.createGame({ playerId: player.id, teamId: team.id, opponent: "Bears", date: "2026-09-14", settings: { visibleEvents: [] } });
+    await repo.appendEvent(game.id, { type: "shot", wallTime: 0, clock: { period: 1, secRemaining: 900 } });
+    await repo.deleteTeam(team.id);
+    expect(await db.teams.count()).toBe(0);
+    expect(await db.players.count()).toBe(0);
+    expect(await db.games.count()).toBe(0);
+    expect(await db.events.count()).toBe(0);
+  });
 });
 
 describe("settings", () => {
