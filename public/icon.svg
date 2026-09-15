@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <ellipse cx="256" cy="300" rx="150" ry="52" fill="#0ea5e9"/>
+  <rect x="106" y="230" width="300" height="70" fill="#0ea5e9"/>
+  <ellipse cx="256" cy="230" rx="150" ry="52" fill="#7dd3fc"/>
+  <text x="256" y="252" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#0f172a">RR</text>
+</svg>

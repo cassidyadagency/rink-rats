@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { SwRegister } from "@/components/SwRegister";
 
 export const metadata: Metadata = {
   title: "Rink Rats",
   description: "Track your kid's ice time and stats in one tap.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Rink Rats" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -21,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-dvh bg-slate-950 text-slate-50 antialiased">
+        <SwRegister />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
