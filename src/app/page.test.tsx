@@ -1,11 +1,10 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach } from "vitest";
 import Home from "./page";
 import { db } from "@/db/schema";
 import * as repo from "@/db/repo";
 
 beforeEach(async () => { await db.delete(); await db.open(); });
-afterEach(cleanup);
 
 describe("Home", () => {
   it("shows the empty state with a link to add a player", async () => {
