@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rink Rats
 
-## Getting Started
+Phone-first PWA for hockey parents: track one kid's shifts, ice time, and a handful of stats with one tap, then share a postgame card. Local-only in v1 — no accounts, no server.
 
-First, run the development server:
+Design spec: `docs/superpowers/specs/2026-09-14-rink-rats-v1-design.md`
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm test           # vitest (watch); `npm test -- --run` for one pass
+npm run typecheck
+npm run build      # static export to out/
+npm run icons      # regenerate PNG icons from public/icon.svg
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How it works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `src/domain/` — pure TypeScript. `deriveGameState(events, rules)` replays an append-only event log into clock, shifts, ice time, stats, timeline. No React or browser imports (enforced by `purity.test.ts`).
+- `src/db/` — Dexie (IndexedDB) tables `teams`, `players`, `games`, `events`, `settings`; `appendEvent` assigns `seq` in a transaction.
+- `src/hooks/` — `useLiveGame` (Dexie liveQuery → reducer), `useGameActions` (stamps events with the current clock), `useNow` (clock ticking), `useWakeLock`.
+- `src/app/` — static routes; ids travel as query params so every page is a precachable HTML file.
+- `public/sw.js` — offline service worker (precache routes + hashed assets; network-first for HTML with cache fallback).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Ice time
 
-## Learn More
+Clock time is the number on the scoreboard: the big Play/Pause mirrors it, and a shift only accrues while the clock runs. Real elapsed time is stored too (Settings → "Show real elapsed time"). Tap the clock digits to correct it after a missed whistle.
 
-To learn more about Next.js, take a look at the following resources:
+## Device checklist (before each deploy)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Install to home screen on iPhone (Safari → Share → Add to Home Screen) and Android (Chrome → Install).
+2. Airplane mode → open the app → start a game → force-quit → reopen: the game resumes with the clock where it should be.
+3. Leave the live screen up for a three-minute shift: the screen stays awake.
+4. End a game → Share card: iOS share sheet shows the PNG; Android offers the same.
+5. Settings → Export: a JSON file is shared/downloaded. Import it on another device: players and games appear.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy
 
-## Deploy on Vercel
+Vercel, zero config (`output: 'export'`). `npm i -g vercel && vercel` from the repo root for a preview; `vercel --prod` to promote.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Not in v1
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Team mode, accounts/sync, live follow-along, two kids in one game. The event log and `domain/` boundary are designed so these bolt on without a rewrite.
