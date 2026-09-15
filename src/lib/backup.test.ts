@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { backupFilename, shareOrDownload } from "./backup";
+import { backupFilename, parseBackup, shareOrDownload } from "./backup";
 
 describe("backupFilename", () => {
   it("embeds the date", () => {
@@ -23,5 +23,11 @@ describe("shareOrDownload", () => {
     const file = new File(["{}"], "x.json", { type: "application/json" });
     expect(await shareOrDownload(file)).toBe("downloaded");
     expect(click).toHaveBeenCalled();
+  });
+});
+
+describe("parseBackup", () => {
+  it("throws a clear error on non-JSON", () => {
+    expect(() => parseBackup("not json")).toThrow(/not JSON/);
   });
 });

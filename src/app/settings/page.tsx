@@ -19,9 +19,14 @@ export default function SettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function exportData() {
-    const backup = await repo.exportAll();
-    const file = new File([JSON.stringify(backup, null, 2)], backupFilename(), { type: "application/json" });
-    toast.show((await shareOrDownload(file)) === "shared" ? "Shared" : "Downloaded");
+    try {
+      const backup = await repo.exportAll();
+      const file = new File([JSON.stringify(backup, null, 2)], backupFilename(), { type: "application/json" });
+      toast.show((await shareOrDownload(file)) === "shared" ? "Shared" : "Downloaded");
+    } catch (e) {
+      if ((e as DOMException).name === "AbortError") return;
+      toast.show("Couldn't export");
+    }
   }
   async function importData(file: File) {
     try {
@@ -32,7 +37,12 @@ export default function SettingsPage() {
     }
   }
   async function deletePlayer(id: string, name: string) {
-    if (confirm(`Delete ${name} and all their games?`)) await repo.deletePlayer(id);
+    if (!confirm(`Delete ${name} and all their games?`)) return;
+    try {
+      await repo.deletePlayer(id);
+    } catch {
+      toast.show("Couldn't delete");
+    }
   }
   async function addTag() {
     const label = newTag.trim();
