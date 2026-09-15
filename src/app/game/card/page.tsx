@@ -38,13 +38,30 @@ function CardInner() {
     try {
       const blob = await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: "#0f172a" });
       if (!blob) throw new Error("Could not render card");
-      const file = new File([blob], `rink-rats-${g.date}-vs-${g.opponent.replace(/\s+/g, "-")}.png`, { type: "image/png" });
+      const opponentSlug = g.opponent.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "opponent";
+      const file = new File([blob], `rink-rats-${g.date}-vs-${opponentSlug}.png`, { type: "image/png" });
       toast.show((await shareOrDownload(file)) === "shared" ? "Shared" : "Saved");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       toast.show(e instanceof Error ? e.message : "Couldn't share");
     }
   }
+
+  const annotate = async (eventId: string, patch: { note?: string; teammate?: string }) => {
+    try {
+      await repo.annotateEvent(eventId, patch);
+    } catch {
+      toast.show("Couldn't save, try again");
+    }
+  };
+
+  const saveNote = async () => {
+    try {
+      await repo.updateGame(id, { note: currentNote.trim() || undefined });
+    } catch {
+      toast.show("Couldn't save, try again");
+    }
+  };
 
   return (
     <main className="safe-b pb-8">
@@ -62,12 +79,12 @@ function CardInner() {
               summary={summary} note={currentNote || undefined} showRealTime={settings.showRealTime} />
           </div></div>
           <textarea className="w-full rounded-xl bg-slate-800 p-3 text-lg" rows={2} placeholder="Parent note (shows on the card)"
-            value={currentNote} onChange={(e) => setNote(e.target.value)} onBlur={() => repo.updateGame(id, { note: currentNote.trim() || undefined })} />
+            value={currentNote} onChange={(e) => setNote(e.target.value)} onBlur={saveNote} />
           <Button variant="primary" size="xl" onClick={share}>Share card</Button>
           <Button size="xl" onClick={() => router.push(`/player?id=${player.id}`)}>Done</Button>
         </div>
       ) : (
-        <Timeline entries={state.timeline} roster={team.roster} onDelete={actions.undoSeq} onRestore={actions.undoSeq} onAnnotate={repo.annotateEvent} />
+        <Timeline entries={state.timeline} roster={team.roster} onDelete={actions.undoSeq} onRestore={actions.undoSeq} onAnnotate={annotate} />
       )}
     </main>
   );
