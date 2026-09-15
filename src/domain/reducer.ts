@@ -142,9 +142,11 @@ export function deriveGameState(events: GameEvent[], rules: GameRules): GameStat
         break;
       case "penalty": {
         stats.penalty += 1;
-        closeShift(e.clock, e.wallTime, "penalty");
         const minutes = e.payload?.minutes ?? 0;
-        if (minutes > 0) penalty = { seq: e.seq, startedAt: e.clock, minutes };
+        if (minutes > 0) {
+          closeShift(e.clock, e.wallTime, "penalty");
+          penalty = { seq: e.seq, startedAt: e.clock, minutes };
+        }
         break;
       }
       case "tag":

@@ -117,6 +117,12 @@ describe("penalty", () => {
     expect(s.stats.penalty).toBe(1);
     expect(s.penalty).toBeUndefined();
   });
+  it("a zero-minute penalty leaves an open shift on the ice", () => {
+    const s = deriveGameState([ev("shift_on", 1, 900, 0), ev("penalty", 1, 850, 50, { minutes: 0 })], rules);
+    expect(s.shift.on).toBe(true);
+    expect(s.shifts.count).toBe(0);
+    expect(s.stats.penalty).toBe(1);
+  });
 });
 
 describe("undo", () => {
