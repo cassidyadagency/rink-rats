@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button, [role="button"] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.safe-b { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.safe-t { padding-top: max(0.5rem, env(safe-area-inset-top)); }
