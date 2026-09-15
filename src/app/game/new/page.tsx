@@ -8,6 +8,7 @@ import { EVENT_LABELS, GOALIE_EVENTS, type EventType } from "@/domain/events";
 import { AppHeader } from "@/components/AppHeader";
 import { QueryGate } from "@/components/QueryGate";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { todayISO } from "@/lib/format";
 
 const ALL: EventType[] = ["goal", "assist", "shot", "penalty", "save", "goal_against", "tag", "moment"];
@@ -16,6 +17,7 @@ const field = "w-full rounded-xl bg-slate-800 px-3 py-3 text-lg";
 function NewGameForm({ player, team, initialVisible }: { player: Player; team: Team; initialVisible: EventType[] }) {
   const playerId = player.id;
   const router = useRouter();
+  const toast = useToast();
   const [opponent, setOpponent] = useState("");
   const [date, setDate] = useState(todayISO());
   const [visible, setVisible] = useState<EventType[]>(initialVisible);
@@ -26,8 +28,19 @@ function NewGameForm({ player, team, initialVisible }: { player: Player; team: T
 
   async function start() {
     setStarting(true);
-    const game = await repo.createGame({ playerId, teamId: team.id, opponent: opponent.trim() || "Opponent", date, settings: { visibleEvents: visible } });
-    router.replace(`/game/live?id=${game.id}`);
+    try {
+      const game = await repo.createGame({
+        playerId,
+        teamId: team.id,
+        opponent: opponent.trim() || "Opponent",
+        date,
+        settings: { visibleEvents: visible, periodCount: team.periodCount, periodLengthSec: team.periodLengthSec, stopTime: team.stopTime },
+      });
+      router.replace(`/game/live?id=${game.id}`);
+    } catch {
+      toast.show("Couldn't save, try again");
+      setStarting(false);
+    }
   }
 
   return (

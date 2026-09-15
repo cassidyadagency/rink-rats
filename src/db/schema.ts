@@ -37,7 +37,7 @@ export interface Game {
   /** YYYY-MM-DD */
   date: string;
   status: GameStatus;
-  settings: { visibleEvents: EventType[] };
+  settings: { visibleEvents: EventType[]; periodCount?: number; periodLengthSec?: number; stopTime?: boolean };
   note?: string;
   createdAt: number;
   finalizedAt?: number;

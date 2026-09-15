@@ -26,6 +26,21 @@ describe("appendEvent", () => {
   });
 });
 
+describe("createGame", () => {
+  it("stores a snapshot of the team's period rules on the game", async () => {
+    const { team, player } = await seedPlayer();
+    const game = await repo.createGame({
+      playerId: player.id,
+      teamId: team.id,
+      opponent: "Bears",
+      date: "2026-09-14",
+      settings: { visibleEvents: [], periodCount: team.periodCount, periodLengthSec: team.periodLengthSec, stopTime: team.stopTime },
+    });
+    expect(game.settings).toMatchObject({ periodCount: 3, periodLengthSec: 900, stopTime: true });
+    expect(await db.games.get(game.id)).toMatchObject({ settings: { periodCount: 3, periodLengthSec: 900, stopTime: true } });
+  });
+});
+
 describe("cascades", () => {
   it("deleting a player removes its games and events", async () => {
     const { team, player } = await seedPlayer();
@@ -89,5 +104,18 @@ describe("export / import", () => {
   it("rejects malformed input without writing", async () => {
     await expect(repo.importAll({ version: 2 } as never)).rejects.toThrow(/unsupported|invalid/i);
     expect(await db.teams.count()).toBe(0);
+  });
+  it("defaults customTags to [] when the backup's settings omit it", async () => {
+    const backup = {
+      version: 1 as const,
+      exportedAt: new Date().toISOString(),
+      teams: [],
+      players: [],
+      games: [],
+      events: [],
+      settings: { id: "app", showRealTime: true } as unknown as repo.Backup["settings"],
+    };
+    await repo.importAll(backup);
+    expect(await repo.getSettings()).toEqual({ id: "app", showRealTime: true, customTags: [] });
   });
 });

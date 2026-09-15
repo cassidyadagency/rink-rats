@@ -119,7 +119,14 @@ export async function importAll(backup: Backup) {
     await db.players.bulkPut(backup.players);
     await db.games.bulkPut(backup.games);
     await db.events.bulkPut(backup.events);
-    if (backup.settings) await db.settings.put({ ...backup.settings, id: "app" });
+    if (backup.settings) {
+      await db.settings.put({
+        ...DEFAULT_SETTINGS,
+        ...backup.settings,
+        id: "app",
+        customTags: Array.isArray(backup.settings.customTags) ? backup.settings.customTags : [],
+      });
+    }
   });
   return { teams: backup.teams.length, players: backup.players.length, games: backup.games.length, events: backup.events.length };
 }
