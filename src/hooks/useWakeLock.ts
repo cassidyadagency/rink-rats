@@ -4,10 +4,17 @@ import { useEffect } from "react";
 export function useWakeLock(active: boolean) {
   useEffect(() => {
     if (!active || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    let cancelled = false;
     let sentinel: WakeLockSentinel | null = null;
     const request = async () => {
+      if (document.visibilityState !== "visible") return;
       try {
-        if (document.visibilityState === "visible") sentinel = await navigator.wakeLock.request("screen");
+        const s = await navigator.wakeLock.request("screen");
+        if (cancelled) {
+          s.release().catch(() => {});
+          return;
+        }
+        sentinel = s;
       } catch {
         /* denied or unsupported — ignore */
       }
@@ -15,6 +22,7 @@ export function useWakeLock(active: boolean) {
     request();
     document.addEventListener("visibilitychange", request);
     return () => {
+      cancelled = true;
       document.removeEventListener("visibilitychange", request);
       sentinel?.release().catch(() => {});
     };

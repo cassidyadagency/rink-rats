@@ -27,4 +27,13 @@ describe("useNow", () => {
     act(() => { vi.setSystemTime(9_000); document.dispatchEvent(new Event("visibilitychange")); });
     expect(result.current).toBe(9_000);
   });
+  it("re-samples immediately when it becomes active", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const { result, rerender } = renderHook(({ active }) => useNow(active, 250), { initialProps: { active: false } });
+    act(() => { vi.setSystemTime(9_000); });
+    rerender({ active: true });
+    act(() => { vi.advanceTimersByTime(0); });
+    expect(result.current).toBe(9_000);
+  });
 });
