@@ -27,4 +27,29 @@ describe("Timeline", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /show all/i }));
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
+
+  it("annotates a goal with a teammate and note", async () => {
+    const onAnnotate = vi.fn();
+    const roster = [{ name: "Sam", jersey: 9, position: "F" as const }];
+    render(<Timeline entries={[entry(1, "goal")]} roster={roster} onDelete={() => {}} onRestore={() => {}} onAnnotate={onAnnotate} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Note" }));
+    await user.click(screen.getByRole("button", { name: "#9 Sam" }));
+    await user.type(screen.getByPlaceholderText("Note"), "Top shelf");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onAnnotate).toHaveBeenCalledWith("e1", { note: "Top shelf", teammate: "Sam" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("resets the sheet between entries", async () => {
+    const onAnnotate = vi.fn();
+    render(<Timeline entries={[entry(1, "goal"), entry(2, "goal")]} roster={[]} onDelete={() => {}} onRestore={() => {}} onAnnotate={onAnnotate} />);
+    const user = userEvent.setup();
+    const notes = screen.getAllByRole("button", { name: "Note" });
+    await user.click(notes[0]);
+    await user.type(screen.getByPlaceholderText("Note"), "first");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getAllByRole("button", { name: "Note" })[1]);
+    expect(screen.getByPlaceholderText("Note")).toHaveValue("");
+  });
 });
