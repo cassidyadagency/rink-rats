@@ -1,10 +1,16 @@
 "use client";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export function useLongPress(onLongPress: () => void, ms = 500) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fired = useRef(false);
-  const clear = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+  const clear = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+
+  useEffect(() => clear, [clear]);
+
   return {
     fired,
     handlers: {
