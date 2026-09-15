@@ -73,6 +73,15 @@ describe("shifts", () => {
     expect(s.shifts.list[0]).toMatchObject({ clockSec: 20, realSec: 20, closedBy: "period_end", period: 1 });
     expect(s.shift.on).toBe(false);
   });
+  it("a manual period_end closes the open shift at the stamped time, not 0:00", () => {
+    const s = deriveGameState([
+      ev("shift_on", 1, 900, 0),
+      ev("clock_pause", 1, 45, 855),
+      ev("period_end", 1, 45, 855),
+    ], rules);
+    expect(s.shifts.list[0]).toMatchObject({ clockSec: 855, closedBy: "period_end" });
+    expect(s.clock).toMatchObject({ period: 2, secRemaining: 900, running: false });
+  });
   it("back-dated shift_on yields the corrected duration", () => {
     const s = deriveGameState([ev("clock_start", 1, 900, 0), ev("shift_on", 1, 850, 100), ev("shift_off", 1, 800, 150)], rules);
     expect(s.shifts.list[0].clockSec).toBe(50);

@@ -26,7 +26,7 @@ export function useGameActions(gameId: string, state: GameState | undefined, per
   const setClock = (period: number, secRemaining: number) => record("clock_set", undefined, { period, secRemaining });
   const endPeriod = async () => {
     if (!state) return;
-    const stamp = { period: state.clock.period, secRemaining: 0 };
+    const stamp = stampAt(state.clock, Date.now());
     if (state.clock.running) await record("clock_pause", undefined, stamp);
     await record("period_end", undefined, stamp, `End of period ${state.clock.period}`);
   };

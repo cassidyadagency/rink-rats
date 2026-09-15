@@ -123,7 +123,7 @@ export function deriveGameState(events: GameEvent[], rules: GameRules): GameStat
         isFinalPeriodComplete = false;
         break;
       case "period_end":
-        closeShift({ period: e.clock.period, secRemaining: 0 }, e.wallTime, "period_end");
+        closeShift(e.clock, e.wallTime, "period_end");
         if (e.clock.period >= rules.periodCount) {
           clock = { period: e.clock.period, secRemaining: 0, running: false, anchorWallTime: e.wallTime };
           isFinalPeriodComplete = true;
