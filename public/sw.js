@@ -1,14 +1,21 @@
 /* Rink Rats service worker: precache the app shell, serve offline. */
+/* Update policy: new versions install in the background and only activate on
+ * the next launch, once every tab held by the old worker has closed — never
+ * mid-game. Do not add skipWaiting() to the install handler. */
 const CACHE = "rink-rats-v1";
 const ROUTES = ["/", "/player", "/player/new", "/player/edit", "/team", "/game/new", "/game/live", "/game/card", "/settings"];
 const NETWORK_TIMEOUT_MS = 3000;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(precache().then(() => self.skipWaiting()));
+  event.waitUntil(precache());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
 });
 
 async function precache() {
