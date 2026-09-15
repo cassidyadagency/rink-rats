@@ -63,6 +63,17 @@ describe("defaultVisibleEvents", () => {
   });
 });
 
+describe("annotateEvent", () => {
+  it("merges note and teammate into payload", async () => {
+    const { team, player } = await seedPlayer();
+    const game = await repo.createGame({ playerId: player.id, teamId: team.id, opponent: "Bears", date: "2026-09-14", settings: { visibleEvents: [] } });
+    const e = await repo.appendEvent(game.id, { type: "goal", wallTime: 0, clock: { period: 1, secRemaining: 900 } });
+    await repo.annotateEvent(e.id, { teammate: "Sam" });
+    await repo.annotateEvent(e.id, { note: "Top shelf" });
+    expect((await db.events.get(e.id))?.payload).toEqual({ teammate: "Sam", note: "Top shelf" });
+  });
+});
+
 describe("export / import", () => {
   it("round-trips without duplicating ids", async () => {
     const { team, player } = await seedPlayer();

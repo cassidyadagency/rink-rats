@@ -66,6 +66,13 @@ export function appendEvent(gameId: string, draft: EventDraft): Promise<GameEven
 export function listEvents(gameId: string): Promise<GameEvent[]> {
   return db.events.where("[gameId+seq]").between([gameId, Dexie.minKey], [gameId, Dexie.maxKey]).toArray();
 }
+export async function annotateEvent(id: string, patch: { note?: string; teammate?: string }) {
+  await db.transaction("rw", db.events, async () => {
+    const e = await db.events.get(id);
+    if (!e) return;
+    await db.events.update(id, { payload: { ...e.payload, ...patch } });
+  });
+}
 
 // ---- settings ----
 export async function getSettings(): Promise<Settings> {
