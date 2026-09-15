@@ -41,7 +41,8 @@ function CardInner() {
       const file = new File([blob], `rink-rats-${g.date}-vs-${g.opponent.replace(/\s+/g, "-")}.png`, { type: "image/png" });
       toast.show((await shareOrDownload(file)) === "shared" ? "Shared" : "Saved");
     } catch (e) {
-      toast.show((e as Error).message);
+      if (e instanceof Error && e.name === "AbortError") return;
+      toast.show(e instanceof Error ? e.message : "Couldn't share");
     }
   }
 
@@ -56,7 +57,7 @@ function CardInner() {
 
       {tab === "card" ? (
         <div className="space-y-4 px-4">
-          <div className="overflow-x-auto"><div ref={cardRef}>
+          <div className="overflow-x-auto"><div ref={cardRef} className="w-[360px]">
             <PostgameCard playerLabel={playerName(player)} teamName={team.name} opponent={g.opponent} date={g.date}
               summary={summary} note={currentNote || undefined} showRealTime={settings.showRealTime} />
           </div></div>
