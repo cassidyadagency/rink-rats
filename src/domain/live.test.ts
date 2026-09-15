@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { deriveGameState, type GameRules } from "./reducer";
-import { liveTotals, penaltyRemainingSec } from "./live";
+import { liveTotals, penaltyRemainingSec, shouldAutoEndPeriod } from "./live";
 import type { EventPayload, EventType, GameEvent } from "./events";
 
 const rules: GameRules = { periodCount: 3, periodLengthSec: 900 };
@@ -52,5 +52,23 @@ describe("penaltyRemainingSec", () => {
       ev("period_end", 1, 0, 30), ev("clock_start", 2, 900, 100),
     ], rules);
     expect(penaltyRemainingSec(s, rules, 110_000)).toBe(120 - 30 - 10);
+  });
+});
+
+describe("shouldAutoEndPeriod", () => {
+  it("fires at 0 when running", () => {
+    seq = 0;
+    const s = deriveGameState([ev("clock_start", 1, 5, 0)], rules);
+    expect(shouldAutoEndPeriod(s, 5_000, 0)).toEqual({ fire: true, nextLastEnded: 1 });
+  });
+  it("doesn't re-fire for same period while display is 0", () => {
+    seq = 0;
+    const s = deriveGameState([ev("clock_start", 1, 5, 0)], rules);
+    expect(shouldAutoEndPeriod(s, 5_000, 1)).toEqual({ fire: false, nextLastEnded: 1 });
+  });
+  it("re-arms after clock_set with time left", () => {
+    seq = 0;
+    const s = deriveGameState([ev("clock_start", 1, 5, 0), ev("clock_set", 1, 100, 5)], rules);
+    expect(shouldAutoEndPeriod(s, 5_000, 1)).toEqual({ fire: false, nextLastEnded: 0 });
   });
 });

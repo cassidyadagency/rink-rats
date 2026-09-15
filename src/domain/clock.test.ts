@@ -15,6 +15,9 @@ describe("displaySeconds", () => {
   it("never goes below zero", () => {
     expect(displaySeconds(running, 10_000 + 700_000)).toBe(0);
   });
+  it("never exceeds secRemaining when now is before the anchor", () => {
+    expect(displaySeconds(running, 5_000)).toBe(600);
+  });
 });
 
 describe("clockElapsed", () => {

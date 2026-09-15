@@ -6,7 +6,7 @@ import { db, DEFAULT_SETTINGS, DEFAULT_TAGS } from "@/db/schema";
 import * as repo from "@/db/repo";
 import type { EventType } from "@/domain/events";
 import { displaySeconds } from "@/domain/clock";
-import { liveTotals, penaltyRemainingSec } from "@/domain/live";
+import { liveTotals, penaltyRemainingSec, shouldAutoEndPeriod } from "@/domain/live";
 import { useLiveGame } from "@/hooks/useLiveGame";
 import { useGameActions } from "@/hooks/useGameActions";
 import { useNow } from "@/hooks/useNow";
@@ -35,26 +35,29 @@ function LiveInner() {
   const now = useNow(active);
   useWakeLock(true);
 
-  const [sheet, setSheet] = useState<"clock" | "tag" | "penalty" | "backdate" | null>(null);
+  const [sheet, setSheet] = useState<"tag" | "penalty" | "backdate" | null>(null);
+  const [clockSnap, setClockSnap] = useState<{ period: number; sec: number } | null>(null);
   const endedPeriod = useRef(0);
 
   useEffect(() => { if (game?.status === "final") router.replace(`/game/card?id=${id}`); }, [game?.status, id, router]);
 
-  // Auto period end when the running clock reaches 0:00. `endPeriod` is
-  // destructured out of `actions` (a fresh object every render) so the
-  // effect's deps stay referentially stable and this doesn't re-fire every
-  // tick; the endedPeriod ref still guards against calling it twice for the
-  // same period.
+  // Auto period end when the running clock reaches 0:00. `endPeriod` is a
+  // fresh function every render (destructured from `actions`, a new object
+  // each render) and this effect is meant to run every tick — `now` is a dep
+  // specifically so it re-checks the clock each tick. Double-firing (and
+  // failing to re-arm after a clock_set puts time back on a period already
+  // marked ended) is handled by shouldAutoEndPeriod via the endedPeriod ref,
+  // not by limiting how often the effect itself runs.
   const { endPeriod } = actions;
   useEffect(() => {
-    if (!state || !state.clock.running) return;
-    if (displaySeconds(state.clock, now) > 0) return;
-    if (endedPeriod.current === state.clock.period) return;
-    endedPeriod.current = state.clock.period;
-    endPeriod();
+    if (!state) return;
+    const { fire, nextLastEnded } = shouldAutoEndPeriod(state, now, endedPeriod.current);
+    endedPeriod.current = nextLastEnded;
+    if (fire) endPeriod();
   }, [state, now, endPeriod]);
 
   if (loading || !game || !team || !player || !rules || !state || !settings) return null;
+  const s = state;
 
   const totals = liveTotals(state, rules, now);
   const penaltyLeft = penaltyRemainingSec(state, rules, now);
@@ -66,12 +69,13 @@ function LiveInner() {
     else actions.record(type);
   };
 
-  async function endGame() {
+  const endGame = async () => {
     if (!confirm("End game and build the postgame card?")) return;
-    if (state!.clock.running) await actions.pause();
+    if (s.shift.on) await actions.toggleShift();
+    if (s.clock.running) await actions.pause();
     await repo.updateGame(id, { status: "final", finalizedAt: Date.now() });
     router.replace(`/game/card?id=${id}`);
-  }
+  };
 
   return (
     <main className="safe-b safe-t flex min-h-dvh flex-col gap-3 pb-6">
@@ -79,7 +83,8 @@ function LiveInner() {
         <button onClick={() => router.push(`/player?id=${player.id}`)} className="text-slate-400">‹ Back</button>
         <button onClick={endGame} className="text-rose-300">End game</button>
       </div>
-      <LiveClock clock={state.clock} now={now} opponent={game.opponent} onTap={() => setSheet("clock")} />
+      <LiveClock clock={state.clock} now={now} opponent={game.opponent}
+        onTap={() => setClockSnap({ period: state.clock.period, sec: Math.round(displaySeconds(state.clock, Date.now())) })} />
       <PlayPauseButton running={state.clock.running} disabled={state.isFinalPeriodComplete} stopTime={team.stopTime} onPlay={actions.play} onPause={actions.pause} />
       <PenaltyBanner remainingSec={penaltyLeft} onBackOnIce={actions.toggleShift} />
       <ShiftCard name={playerName(player)} on={state.shift.on} totals={totals} showRealTime={settings.showRealTime}
@@ -89,9 +94,9 @@ function LiveInner() {
       <Timeline entries={state.timeline} roster={team.roster} limit={3}
         onDelete={actions.undoSeq} onRestore={actions.undoSeq} onAnnotate={repo.annotateEvent} />
 
-      <ClockSetSheet open={sheet === "clock"} initialPeriod={state.clock.period} initialSec={Math.round(displaySeconds(state.clock, now))}
+      <ClockSetSheet open={clockSnap !== null} initialPeriod={clockSnap?.period ?? 1} initialSec={clockSnap?.sec ?? 0}
         periodCount={rules.periodCount} periodLengthSec={rules.periodLengthSec}
-        onClose={() => setSheet(null)} onSet={actions.setClock} onEndPeriod={actions.endPeriod} />
+        onClose={() => setClockSnap(null)} onSet={actions.setClock} onEndPeriod={actions.endPeriod} />
       <TagSheet open={sheet === "tag"} tags={tags} onClose={() => setSheet(null)} onPick={(label) => actions.record("tag", { label }, undefined, label)} />
       <PenaltySheet open={sheet === "penalty"} onClose={() => setSheet(null)} onPick={(minutes) => actions.record("penalty", { minutes })} />
       <BackdateSheet open={sheet === "backdate"} on={state.shift.on} onClose={() => setSheet(null)} onPick={actions.backdatedShift} />

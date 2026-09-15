@@ -10,7 +10,7 @@ export interface ClockState {
 
 export function displaySeconds(clock: ClockState, now: number): number {
   if (!clock.running) return clock.secRemaining;
-  return Math.max(0, clock.secRemaining - (now - clock.anchorWallTime) / 1000);
+  return Math.min(clock.secRemaining, Math.max(0, clock.secRemaining - (now - clock.anchorWallTime) / 1000));
 }
 
 export function stampAt(clock: ClockState, now: number): ClockStamp {
