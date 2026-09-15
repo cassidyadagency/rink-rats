@@ -41,5 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# generated at build time by scripts/stamp-sw.mjs from sw/sw.js
+/public/sw.js
+
 # superpowers
 .superpowers/

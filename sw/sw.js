@@ -2,7 +2,7 @@
 /* Update policy: new versions install in the background and only activate on
  * the next launch, once every tab held by the old worker has closed — never
  * mid-game. Do not add skipWaiting() to the install handler. */
-const CACHE = "rink-rats-v1";
+const CACHE = "rink-rats-__BUILD_ID__";
 const ROUTES = ["/", "/player", "/player/new", "/player/edit", "/team", "/game/new", "/game/live", "/game/card", "/settings"];
 const NETWORK_TIMEOUT_MS = 3000;
 
