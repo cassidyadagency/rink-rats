@@ -1,10 +1,22 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Home from "./page";
+import { db } from "@/db/schema";
+import * as repo from "@/db/repo";
+
+beforeEach(async () => { await db.delete(); await db.open(); });
+afterEach(cleanup);
 
 describe("Home", () => {
-  it("renders the app name", () => {
+  it("shows the empty state with a link to add a player", async () => {
     render(<Home />);
-    expect(screen.getByRole("heading", { name: "Rink Rats" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /add your player/i })).toHaveAttribute("href", "/player/new");
+  });
+  it("lists players with jersey and team", async () => {
+    const team = await repo.createTeam({ name: "Hawks", season: "26-27", periodCount: 3, periodLengthSec: 900, stopTime: true, roster: [] });
+    await repo.createPlayer({ firstName: "Jake", lastName: "C", jersey: 17, position: "F", teamId: team.id });
+    render(<Home />);
+    expect(await screen.findByText("#17 Jake C")).toBeInTheDocument();
+    expect(screen.getByText("Hawks")).toBeInTheDocument();
   });
 });
